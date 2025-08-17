@@ -2,57 +2,69 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 
-// Create a new user
+// CREATE a new user
 router.post("/", async (req, res) => {
+  console.log("POST /users body:", req.body); // Debug log
   try {
-    const user = new User(req.body);
-    const savedUser = await user.save();
-    res.status(201).send(savedUser);
+    const newUser = new User(req.body);
+    const savedUser = await newUser.save();
+    res.status(201).json(savedUser);
   } catch (err) {
-    res.status(400).send(err);
-  }
-});
-
-// Get all users
-router.get("/", async (req, res) => {
-  try {
-    const users = await User.find();
-    res.send(users);
-  } catch (err) {
-    res.status(500).send(err);
-  }
-});
-
-// Update a user by ID
-// Update user by ID
-router.put("/:id", async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const updatedData = req.body; // <--- Important: data from Postman
-    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
-      new: true,           // returns the updated document
-      runValidators: true, // validates schema rules
-    });
-
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json(updatedUser);
-  } catch (err) {
+    console.error(err);
     res.status(400).json({ message: "Bad Request", error: err.message });
   }
 });
 
+// READ all users
+router.get("/", async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+});
 
-// Delete a user by ID
+// READ single user by ID
+router.get("/:id", async (req, res) => {
+  console.log("GET /users/:id params:", req.params); // Debug log
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ message: "Bad Request", error: err.message });
+  }
+});
+
+// UPDATE user by ID
+router.put("/:id", async (req, res) => {
+  console.log("PUT /users/:id params:", req.params, "body:", req.body); // Debug log
+  try {
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!updatedUser) return res.status(404).json({ message: "User not found" });
+    res.json(updatedUser);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ message: "Bad Request", error: err.message });
+  }
+});
+
+// DELETE user by ID
 router.delete("/:id", async (req, res) => {
+  console.log("DELETE /users/:id params:", req.params); // Debug log
   try {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
-    if (!deletedUser) return res.status(404).send({ message: "User not found" });
-    res.send({ message: "User deleted successfully" });
+    if (!deletedUser) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "User deleted successfully" });
   } catch (err) {
-    res.status(400).send(err);
+    console.error(err);
+    res.status(400).json({ message: "Bad Request", error: err.message });
   }
 });
 
